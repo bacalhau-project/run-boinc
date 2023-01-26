@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/filecoin-project/bacalhau/pkg/logger"
+	"github.com/filecoin-project/bacalhau/pkg/system"
 	"strings"
 	"time"
 )
@@ -34,7 +35,8 @@ func main() {
 		panic("missing domain flag")
 	}
 
-	ctx := context.Background() // TODO should the context cancel on ctrl+c?
+	ctx, cancel := system.WithSignalShutdown(context.Background())
+	defer cancel()
 
 	for {
 		if err := run(ctx, image, projectUrl, weakAccountKey, timeout, domains.value); err != nil {
