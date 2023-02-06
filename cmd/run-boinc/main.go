@@ -5,8 +5,10 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/filecoin-project/bacalhau/pkg/logger"
-	"github.com/filecoin-project/bacalhau/pkg/system"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -35,15 +37,21 @@ func main() {
 		panic("missing domain flag")
 	}
 
-	ctx, cancel := system.WithSignalShutdown(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	for {
-		if err := run(ctx, image, projectUrl, weakAccountKey, timeout, domains.value); err != nil {
-			panic(err)
-		}
+	t := time.NewTicker(30 * time.Second)
+	defer t.Stop()
 
-		time.Sleep(1 * time.Minute)
+	for {
+		select {
+		case <-ctx.Done():
+			panic(ctx.Err())
+		case <-t.C:
+			if err := run(ctx, image, projectUrl, weakAccountKey, timeout, domains.value); err != nil {
+				panic(err)
+			}
+		}
 	}
 }
 

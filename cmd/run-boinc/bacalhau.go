@@ -97,12 +97,12 @@ func isJobAccepted(ctx context.Context, jobId string) (bool, error) {
 func isJobFinished(job model.Job) bool {
 	for _, state := range job.Status.State.Nodes {
 		for _, shard := range state.Shards {
-			if shard.State.IsTerminal() {
-				return true
+			if !shard.State.IsTerminal() {
+				return false
 			}
 		}
 	}
-	return false
+	return true
 }
 
 func jobAlreadyRunning(ctx context.Context) (string, error) {
